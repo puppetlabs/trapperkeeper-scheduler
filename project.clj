@@ -17,6 +17,7 @@
   :profiles {:dev {:source-paths ["dev"]
                    :dependencies [[org.clojure/tools.namespace "0.2.4"]
                                   [puppetlabs/trapperkeeper ~tk-version :classifier "test" :scope "test"]
+                                  [puppetlabs/kitchensink ~ks-version :classifier "test" :scope "test"]
                                   [spyscope "0.1.4" :exclusions [clj-time]]]
                    :injections [(require 'spyscope.core)]}}
 
