@@ -59,6 +59,7 @@ issues we've opened.  Also, the source repo for `at-at` contains no tests :(
 * Consider porting the backend to something more sophisticated (and maintained)
   than `at-at`; if we do this, the intent would be to maintain the existing API.
 
-## License
+#Support
 
-Copyright © 2015 Puppet Labs
+Please log tickets and issues at our [Jira Tracker](https://tickets.puppetlabs.com/issues/?jql=project%20%3D%20Trapperkeeper).
+
