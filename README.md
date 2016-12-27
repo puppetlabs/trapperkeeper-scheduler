@@ -18,20 +18,41 @@ scheduling subsystem so that other services don't need to (and avoids potential 
 around multiple services attempting to initialize the same scheduling subystem
 in a single JVM process).
 
-This is a very early release, and provides only the most basic API.  The functions
-that are currently available are as follows:
+The functions that are currently available are as follows:
 
 * `interspaced [interval-ms f]`: schedules a job that will call `f`, block until
   that call completes, sleep for `interval-ms` milliseconds, and then repeat.
   Returns an identifier that can be used to reference this scheduled job (e.g.,
   for cancellation) later.
+* `interspaced [interval-ms f group-id]`: schedules a job that will call `f`, block until
+  that call completes, sleep for `interval-ms` milliseconds, and then repeat.
+  Returns an identifier that can be used to reference this scheduled job (e.g.,
+  for cancellation) later. A group identifier `group-id` can be provided that
+  allows jobs in the same group to be stopped at the same time.
 * `after [interval-ms f]`: schedules a job that will call `f` a single time, after
   a delay of `interval-ms` milliseconds.  Returns an identifier that can be used
   to reference this scheduled job (e.g. for cancellation) later.
+* `after [interval-ms f group-id]`: schedules a job that will call `f` a single time, after
+  a delay of `interval-ms` milliseconds.  Returns an identifier that can be used
+  to reference this scheduled job (e.g. for cancellation) later. A group identifier
+  `group-id` can be provided that allows jobs in the same group to be stopped
+  at the same time.
 * `stop-job [job-id]`: Given a `job-id` returned by one of the previous functions,
   cancels the job.  If the job is currently executing it will be allowed to complete,
   but will not be invoked again afterward.  Returns `true` if the job was successfully
   stopped, `false` otherwise.
+* `stop-grouped-jobs [group-id]`: Given a `group-id` identifier, cancel all the jobs
+  associated with that `group-id`.  If any of the jobs are currently executing they
+  will be allowed to complete, but will not be invoked again afterward.  Returns a
+  sequence of maps, one for each job in the group, with each map containing the
+  `job` and a boolean `stopped?` key indiciating if the job was stopped successfully
+  or not.
+* `count-jobs []`: Return a count of the total number of scheduled jobs known to
+  to the scheduling service.  `after` jobs that have completed won't be included
+  in the total.
+* `count-jobs [group-id]`: Return a count of the total number of scheduled jobs
+  with the associated `group-id` known to to the scheduling service.
+  `after` jobs that have completed won't be included in the total.
 
 ### Implementation Details
 
