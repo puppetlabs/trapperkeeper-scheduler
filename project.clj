@@ -1,7 +1,7 @@
 (def tk-version "1.1.1")
 (def ks-version "1.0.0")
 
-(defproject puppetlabs/trapperkeeper-scheduler "0.1.0"
+(defproject puppetlabs/trapperkeeper-scheduler "0.1.1-SNAPSHOT"
   :description "Trapperkeeper Scheduler Service"
 
   :dependencies [[org.clojure/clojure "1.6.0"]
