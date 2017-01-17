@@ -75,7 +75,8 @@
   (stop [this context]
     (log/debug "Shutting down Scheduler Service")
     ; Stop any jobs that are still running
-    (core/stop-all-jobs! @(:jobs context) (get-pool this))
+    (when-let [jobs (:jobs context)]
+      (core/stop-all-jobs! @jobs (get-pool this)))
     (log/debug "Scheduler Service shutdown complete.")
     context)
 
