@@ -2,7 +2,8 @@
   (:require [puppetlabs.trapperkeeper.services :as tk]
             [puppetlabs.trapperkeeper.services.protocols.scheduler :refer :all]
             [puppetlabs.trapperkeeper.services.scheduler.scheduler-core :as core]
-            [clojure.tools.logging :as log]))
+            [clojure.tools.logging :as log]
+            [puppetlabs.i18n.core :as i18n]))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Internal "helper" functions
@@ -66,14 +67,14 @@
   []
 
   (init [this context]
-    (log/debug "Initializing Scheduler Service")
+    (log/debug (i18n/trs "Initializing Scheduler Service"))
     (let [pool (core/create-pool)]
       (assoc context :pool pool
                      :jobs (atom #{})
                      :after-id (atom 0))))
 
   (stop [this context]
-    (log/debug "Shutting down Scheduler Service")
+    (log/debug (i18n/trs "Shutting down Scheduler Service"))
     ; Stop any jobs that are still running
     (when-let [jobs (:jobs context)]
       (core/stop-all-jobs! @jobs (get-pool this)))

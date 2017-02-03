@@ -3,6 +3,7 @@
 
   :dependencies [[org.clojure/clojure]
                  [puppetlabs/trapperkeeper]
+                 [puppetlabs/i18n]
                  [overtone/at-at "1.2.0"]]
 
   :min-lein-version "2.7.1"
@@ -26,6 +27,7 @@
                    :dependencies [[puppetlabs/trapperkeeper :classifier "test" :scope "test"]
                                   [puppetlabs/kitchensink :classifier "test" :scope "test"]]}}
 
-  :plugins  [[lein-parent "0.3.1"]]
+  :plugins  [[lein-parent "0.3.1"]
+             [puppetlabs/i18n "0.6.0"]]
 
   :repl-options {:init-ns user})

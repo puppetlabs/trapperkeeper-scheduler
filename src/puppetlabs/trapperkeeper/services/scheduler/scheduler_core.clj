@@ -1,6 +1,7 @@
 (ns puppetlabs.trapperkeeper.services.scheduler.scheduler-core
   (:require [overtone.at-at :as at-at]
-            [clojure.tools.logging :as log]))
+            [clojure.tools.logging :as log]
+            [puppetlabs.i18n.core :as i18n]))
 
 (defn create-pool
   "Creates and returns a thread pool which can be used for scheduling jobs."
@@ -15,7 +16,7 @@
     (try
       (f)
       (catch Throwable t
-        (log/error t "scheduled job threw error")
+        (log/error t (i18n/trs "scheduled job threw error"))
         (throw t)))))
 
 (defn interspaced
