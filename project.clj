@@ -1,14 +1,15 @@
-(def tk-version "1.1.1")
-(def ks-version "1.0.0")
-
 (defproject puppetlabs/trapperkeeper-scheduler "0.1.1-SNAPSHOT"
   :description "Trapperkeeper Scheduler Service"
 
-  :dependencies [[org.clojure/clojure "1.6.0"]
-                 [puppetlabs/trapperkeeper ~tk-version]
-                 [puppetlabs/kitchensink ~ks-version]
-                 [prismatic/schema "0.4.0"]
+  :dependencies [[org.clojure/clojure]
+                 [puppetlabs/trapperkeeper]
+                 [puppetlabs/i18n]
                  [overtone/at-at "1.2.0"]]
+
+  :min-lein-version "2.7.1"
+
+  :parent-project {:coords [puppetlabs/clj-parent "0.3.3"]
+                   :inherit [:managed-dependencies]}
 
   :pedantic? :abort
 
@@ -23,10 +24,10 @@
                                      :sign-releases false}]]
 
   :profiles {:dev {:source-paths ["dev"]
-                   :dependencies [[org.clojure/tools.namespace "0.2.4"]
-                                  [puppetlabs/trapperkeeper ~tk-version :classifier "test" :scope "test"]
-                                  [puppetlabs/kitchensink ~ks-version :classifier "test" :scope "test"]
-                                  [spyscope "0.1.4" :exclusions [clj-time]]]
-                   :injections [(require 'spyscope.core)]}}
+                   :dependencies [[puppetlabs/trapperkeeper :classifier "test" :scope "test"]
+                                  [puppetlabs/kitchensink :classifier "test" :scope "test"]]}}
+
+  :plugins  [[lein-parent "0.3.1"]
+             [puppetlabs/i18n "0.6.0"]]
 
   :repl-options {:init-ns user})
