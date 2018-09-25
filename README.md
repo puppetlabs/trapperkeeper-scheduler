@@ -53,32 +53,19 @@ The functions that are currently available are as follows:
 * `count-jobs [group-id]`: Return a count of the total number of scheduled jobs
   with the associated `group-id` known to to the scheduling service.
   `after` jobs that have completed won't be included in the total.
+* `get-jobs []`: return a list of the current job identifiers
+* `get-jobs [group-id]`: return a list of the current job identifiers associated
+  with the specified group identifier
 
 ### Implementation Details
 
-The current implementation of the `SchedulerService` is a fairly thin wrapper around
-the [`overtone/at-at`](https://github.com/overtone/at-at) library.  This approach
-was chosen for a couple of reasons:
-
-* A few existing PL projects already use this library, so we thought it'd be better
-  not to introduce a different scheduling subsystem until all of the PL TK projects
-  are aligned to use the SchedulerService.
-* The `at-at` API seems like a pretty reasonable Clojure API for scheduling tasks.
-
-It would probably be a good idea to switch the implementation out to use a different
-backend in the future; without having done too much investigation yet, I'd be
-interested in looking into Quartz/Quartzite, simply because Quartz is very widely-used
-and battle-tested in the Java world.  `at-at` does not appear to be being maintained
-any longer.  We've had a few minor issues with it (especially w/rt shutting down
-the system), and haven't gotten any responses from the maintainer on the github
-issues we've opened.  Also, the source repo for `at-at` contains no tests :(
+The current implementation of the `SchedulerService` is a wrapper around
+the [`org.quartz-scheduler/quartz`](http://www.quartz-scheduler.org/) library.
 
 ### What's Next?
 
 * Add additional scheduling API functions, e.g. `every`.
 * Add API for introspecting the state of currently scheduled jobs
-* Consider porting the backend to something more sophisticated (and maintained)
-  than `at-at`; if we do this, the intent would be to maintain the existing API.
 
 #Support
 

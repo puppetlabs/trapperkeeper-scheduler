@@ -1,14 +1,15 @@
-(defproject puppetlabs/trapperkeeper-scheduler "0.1.1-SNAPSHOT"
+(defproject puppetlabs/trapperkeeper-scheduler "1.0.0-SNAPSHOT"
   :description "Trapperkeeper Scheduler Service"
 
   :dependencies [[org.clojure/clojure]
                  [puppetlabs/trapperkeeper]
                  [puppetlabs/i18n]
-                 [overtone/at-at "1.2.0"]]
+                 [puppetlabs/kitchensink]
+                 [org.quartz-scheduler/quartz "2.2.3"]]
 
   :min-lein-version "2.7.1"
 
-  :parent-project {:coords [puppetlabs/clj-parent "0.6.1"]
+  :parent-project {:coords [puppetlabs/clj-parent "1.7.13"]
                    :inherit [:managed-dependencies]}
 
   :pedantic? :abort
@@ -29,5 +30,5 @@
 
   :plugins  [[lein-parent "0.3.1"]
              [puppetlabs/i18n "0.8.0"]]
-
+  :aot [puppetlabs.trapperkeeper.services.scheduler.job]
   :repl-options {:init-ns user})
