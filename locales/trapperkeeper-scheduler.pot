@@ -1,12 +1,13 @@
 # SOME DESCRIPTIVE TITLE.
 # Copyright (C) YEAR Puppet <docs@puppet.com>
-# This file is distributed under the same license as the puppetlabs.trapperkeeper_scheduler package.
+# This file is distributed under the same license as the PACKAGE package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
 #
 #, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: puppetlabs.trapperkeeper_scheduler \n"
+"X-Git-Ref: bfbdb5753ed0c2efadb894cbab5d60523242a105\n"
 "Report-Msgid-Bugs-To: docs@puppet.com\n"
 "POT-Creation-Date: \n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
@@ -17,8 +18,37 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: src/puppetlabs/trapperkeeper/services/scheduler/scheduler_core.clj
+#: src/puppetlabs/trapperkeeper/services/scheduler/job.clj
 msgid "scheduled job threw error"
+msgstr ""
+
+#. this can occur if the interface is being used while the scheduler is shutdown
+#: src/puppetlabs/trapperkeeper/services/scheduler/scheduler_core.clj
+msgid "Failed to schedule job"
+msgstr ""
+
+#. this can occur if the interface is being used while the scheduler is shutdown
+#: src/puppetlabs/trapperkeeper/services/scheduler/scheduler_core.clj
+msgid "Failure stopping job"
+msgstr ""
+
+#. this can occur if the interface is being used while the scheduler is shutdown
+#: src/puppetlabs/trapperkeeper/services/scheduler/scheduler_core.clj
+msgid "Failure getting all jobs"
+msgstr ""
+
+#: src/puppetlabs/trapperkeeper/services/scheduler/scheduler_core.clj
+msgid "Failed to shutdown schedule service in {0} seconds"
+msgstr ""
+
+#. this can occur if the interface is being used while the scheduler is shutdown
+#: src/puppetlabs/trapperkeeper/services/scheduler/scheduler_core.clj
+msgid "Failure stopping all jobs"
+msgstr ""
+
+#. this can occur if the function is called when the scheduler is shutdown
+#: src/puppetlabs/trapperkeeper/services/scheduler/scheduler_core.clj
+msgid "Failure getting jobs in group"
 msgstr ""
 
 #: src/puppetlabs/trapperkeeper/services/scheduler/scheduler_service.clj
