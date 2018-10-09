@@ -3,54 +3,17 @@
             [puppetlabs.trapperkeeper.services.protocols.scheduler :refer :all]
             [puppetlabs.trapperkeeper.services.scheduler.scheduler-core :as core]
             [clojure.tools.logging :as log]
-            [puppetlabs.i18n.core :as i18n]))
+            [puppetlabs.i18n.core :as i18n])
+  (:import (org.quartz SchedulerException)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Internal "helper" functions
 
-(defn get-pool
+(defn get-scheduler
   [this]
   (-> this
       (tk/service-context)
-      :pool))
-
-(defn get-jobs
-  [this]
-  (-> this
-      (tk/service-context)
-      :jobs))
-
-(defn- enqueue-job!
-  ([this id]
-   (enqueue-job! this id {}))
-  ([this id opts]
-   (let [result (assoc opts :job id)]
-    (swap! (get-jobs this) conj result)
-    result)))
-
-(defn- dequeue-job!
-  ([this job]
-    (swap! (get-jobs this) disj job))
-  ([this id keyword]
-    (when-let [item (first (filter #(= id (get % keyword)) @(get-jobs this)))]
-      (swap! (get-jobs this) disj item))))
-
-(defn- after-job
-  "Jobs run with `after` only execute once, and when done need to be reomved from
-  the scheduled jobs set.  This wraps the job's function so that the job is removed
-  correctly from the set when it completes (or fails)."
-  [this after-id f]
-  (fn []
-    (try
-      (f)
-      (finally
-        (dequeue-job! this after-id :after-id)))))
-
-(defn- jobs-by-group-id
-  [this group-id]
-  (if group-id
-    (filter #(= group-id (:group-id %)) @(get-jobs this))
-    @(get-jobs this)))
+      :scheduler))
 
 (defn- create-maybe-stop-job-fn
   "given a stop-job function, return function that when given a job returns
@@ -58,7 +21,15 @@
   [stop-fn]
   (fn [job]
     {:job job
-    :stopped? (stop-fn job)}))
+     :stopped? (stop-fn job)}))
+
+(def default-group-name "SCHEDULER_DEFAULT")
+
+(defn safe-group-id
+  [group-id]
+  (if (and (not (keyword? group-id)) (empty? group-id))
+    default-group-name
+    (str group-id)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Trapperkeeper service definition
@@ -67,57 +38,53 @@
   []
 
   (init [this context]
-    (log/debug (i18n/trs "Initializing Scheduler Service"))
-    (let [pool (core/create-pool)]
-      (assoc context :pool pool
-                     :jobs (atom #{})
-                     :after-id (atom 0))))
+    (log/info (i18n/trs "Initializing Scheduler Service"))
+    (let [scheduler (core/create-scheduler)]
+      (assoc context :scheduler scheduler)))
 
   (stop [this context]
-    (log/debug (i18n/trs "Shutting down Scheduler Service"))
-    ; Stop any jobs that are still running
-    (when-let [jobs (:jobs context)]
-      (core/stop-all-jobs! @jobs (get-pool this)))
-    (log/debug "Scheduler Service shutdown complete.")
+    (log/info (i18n/trs "Shutting down Scheduler Service"))
+    (core/stop-all-jobs! (get-scheduler this))
+    (log/info "Scheduler Service shutdown complete.")
     context)
 
   (interspaced [this n f]
-    (interspaced this n f nil))
+    (interspaced this n f default-group-name))
 
   (interspaced [this n f group-id]
-               (let [id (core/interspaced n f (get-pool this))]
-                 (enqueue-job! this id {:group-id group-id})))
+    (core/interspaced n f (get-scheduler this) (safe-group-id group-id)))
 
   (after [this n f]
-   (after this n f nil))
+   (after this n f default-group-name))
 
   (after [this n f group-id]
-     ; use after-id to identify the job for the cleanup "after-job" wrapper
-    (let [after-id (swap! (:after-id (tk/service-context this)) inc)
-          ; wrap the job function in a function that will remove the job from the job set when it is done
-          wrapped-fn (after-job this after-id f)
-          id (core/after n wrapped-fn (get-pool this))]
-      (enqueue-job! this id {:after-id after-id
-                           :group-id   group-id})))
+     (core/after n f (get-scheduler this) (safe-group-id group-id)))
 
   (stop-job [this job]
-    (let [result (core/stop-job (:job job) (get-pool this))]
-       (dequeue-job! this job)
-       result))
+    (core/stop-job job (get-scheduler this)))
 
   (stop-jobs
     [this]
-    (stop-jobs this nil))
+    (stop-jobs this default-group-name))
 
   (stop-jobs [this group-id]
-    (let [jobs-by-group (jobs-by-group-id this group-id)]
+    (let [jobs-by-group (core/get-jobs-in-group (get-scheduler this) (safe-group-id group-id))]
        (reduce conj []
          (map
            (create-maybe-stop-job-fn (partial stop-job this))
-            jobs-by-group))))
+           jobs-by-group))))
+
+  (get-jobs
+   [this]
+   (core/get-all-jobs (get-scheduler this)))
+
+  (get-jobs
+    [this group-id]
+    (core/get-jobs-in-group (get-scheduler this) (safe-group-id group-id)))
 
   (count-jobs [this]
-    (count-jobs this nil))
+    (let [jobs (core/get-all-jobs (get-scheduler this))]
+      (count jobs)))
 
   (count-jobs [this group-id]
-    (count (jobs-by-group-id this group-id))))
+    (count (core/get-jobs-in-group (get-scheduler this) (safe-group-id group-id)))))

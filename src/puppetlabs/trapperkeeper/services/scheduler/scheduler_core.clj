@@ -1,64 +1,117 @@
 (ns puppetlabs.trapperkeeper.services.scheduler.scheduler-core
-  (:require [overtone.at-at :as at-at]
-            [clojure.tools.logging :as log]
-            [puppetlabs.i18n.core :as i18n]))
+  (:require [clojure.tools.logging :as log]
+            [puppetlabs.i18n.core :as i18n]
+            [puppetlabs.kitchensink.core :as ks])
+  (:import (org.quartz.impl.matchers GroupMatcher)
+           (org.quartz.impl StdSchedulerFactory SchedulerRepository)
+           (org.quartz JobBuilder SimpleScheduleBuilder TriggerBuilder DateBuilder
+                       DateBuilder$IntervalUnit Scheduler JobKey SchedulerException JobDataMap)
+           (org.quartz.utils Key)
+           (java.util Date)))
 
-(defn create-pool
+(def shutdown-timeout-sec 30)
+
+(defn create-scheduler
   "Creates and returns a thread pool which can be used for scheduling jobs."
   []
-  (at-at/mk-pool))
+  ;; without the following property set, quartz does a version check automatically
+  (System/setProperty "org.quartz.scheduler.skipUpdateCheck" "true")
+  (let [scheduler (StdSchedulerFactory/getDefaultScheduler)]
+    (.start scheduler)
+    scheduler))
 
-(defn wrap-with-error-logging
-  "Returns a function that will invoke 'f' inside a try/catch block.  If an
-  error occurs during execution of 'f', it will be logged and re-thrown."
-  [f]
-  (fn []
-    (try
-      (f)
-      (catch Throwable t
-        (log/error t (i18n/trs "scheduled job threw error"))
-        (throw t)))))
+(defn build-executable-job
+  ([f job-name group-name] (build-executable-job f job-name group-name {}))
+  ([f job-name group-name options]
+   (let [jdm (JobDataMap.)
+         options (assoc options :job f)]
+     (.put jdm "jobData" options)
+     (-> (JobBuilder/newJob puppetlabs.trapperkeeper.services.scheduler.job)
+         (.withIdentity job-name group-name)
+         (.usingJobData jdm)
+         (.build)))))
 
 (defn interspaced
-  ; See docs on the service protocol,
-  ; puppetlabs.enterprise.services.protocols.scheduler
-  [n f pool]
-  (let [job (wrap-with-error-logging f)]
-    (-> (at-at/interspaced n job pool)
-        :id  ; return only the ID; do not leak the at-at RecurringJob instance
-        )))
+  [n f ^Scheduler scheduler group-name]
+  (try
+    (let [job-name (Key/createUniqueName group-name)
+           job (-> (build-executable-job f job-name group-name {:interval n}))
+           schedule (-> (SimpleScheduleBuilder/simpleSchedule))
+           trigger (-> (TriggerBuilder/newTrigger)
+                       (.withSchedule schedule)
+                       (.startNow)
+                       (.build))]
+      (.scheduleJob scheduler job trigger)
+      (.getJobKey trigger))
+    (catch SchedulerException e
+      ; this can occur if the interface is being used while the scheduler is shutdown
+      (log/error e (i18n/trs "Failed to schedule job")))))
 
 (defn after
-  ; See docs on the service protocol,
-  ; puppetlabs.enterprise.services.protocols.scheduler
-  [n f pool]
-  (let [job (wrap-with-error-logging f)]
-    (-> (at-at/after n job pool)
-        :id  ; return only the ID; do not leak the at-at RecurringJob instance
-        )))
+  [n f ^Scheduler scheduler group-name]
+  (try
+    (let [job-name (Key/createUniqueName group-name)
+          job (build-executable-job f job-name group-name)
+          future-date (Date. ^Long (+ (System/currentTimeMillis) n))
+          trigger (-> (TriggerBuilder/newTrigger)
+                      (.startAt future-date)
+                      (.build))]
+      (.scheduleJob scheduler job trigger)
+      (.getJobKey trigger))
+    (catch SchedulerException e
+      ; this can occur if the interface is being used while the scheduler is shutdown
+      (log/error e (i18n/trs "Failed to schedule job")))))
 
 (defn stop-job
-  "Gracefully stops the job specified by 'id'."
-  [id pool]
-  (at-at/stop id pool))
+  "Returns true, if the job was deleted, and false if the job wasn't found."
+  [^JobKey id ^Scheduler scheduler]
+  (try
+    (.deleteJob scheduler id)
+    (catch SchedulerException e
+      ; this can occur if the interface is being used while the scheduler is shutdown
+      (log/debug e (i18n/trs "Failure stopping job"))
+      false)))
+
+(defn get-all-jobs
+  [^Scheduler scheduler]
+  (try
+    (let [groups (seq (.getJobGroupNames scheduler))
+          extract-keys (fn [group-name] (seq (.getJobKeys scheduler (GroupMatcher/jobGroupEquals group-name))))]
+      (mapcat extract-keys groups))
+    (catch SchedulerException e
+      ; this can occur if the interface is being used while the scheduler is shutdown
+      (log/debug e (i18n/trs "Failure getting all jobs"))
+      [])))
 
 (defn stop-all-jobs!
-  "Stops all of the specified jobs."
-  [jobs pool]
-  (doseq [job jobs]
-    (stop-job job pool))
+  [^Scheduler scheduler]
+  (when-not (.isShutdown scheduler)
+    (try
+      (let [sr (SchedulerRepository/getInstance)
+            scheduler-name (.getSchedulerName scheduler)]
+        (doseq [job (get-all-jobs scheduler)]
+          (try
+            (.interrupt scheduler job)
+            (.deleteJob scheduler job)
+            (catch SchedulerException e
+              ; this can occur if the interface is being used while the scheduler is shutdown
+              (log/debug e (i18n/trs "Failure stopping job")))))
 
-  ; Shutdown at-at's thread pool.  This is the only way to do it, which is
-  ; unfortunate because it also resets the thread pool.  It's possible to
-  ; hack around this via ...
-  ;
-  ;   (-> pool
-  ;       :pool-atom
-  ;       (deref)
-  ;       :thread-pool
-  ;       (.shutdown))
-  ;
-  ; ... but that is a horrible hack.  I've opened an issue with at-at to add a
-  ; function that can be called to just stop the pool and not also reset it -
-  ; https://github.com/overtone/at-at/issues/13
-  (at-at/stop-and-reset-pool! pool))
+        (when (= :timeout (ks/with-timeout shutdown-timeout-sec :timeout (.shutdown scheduler true)))
+          (log/info (i18n/trs "Failed to shutdown schedule service in {0} seconds" shutdown-timeout-sec))
+          (.shutdown scheduler))
+        ; explicitly remove the scheduler from the registry to prevent leaks.  This can happen if the
+        ; jobs don't terminate immediately
+        (.remove sr scheduler-name))
+      (catch SchedulerException e
+        ; this can occur if the interface is being used while the scheduler is shutdown
+        (log/debug e (i18n/trs "Failure stopping all jobs"))))))
+
+(defn get-jobs-in-group
+  [^Scheduler scheduler group-id]
+  (try
+    (seq (.getJobKeys scheduler (GroupMatcher/jobGroupEquals group-id)))
+    (catch SchedulerException e
+      ; this can occur if the function is called when the scheduler is shutdown
+      (log/debug e (i18n/trs "Failure getting jobs in group"))
+      [])))

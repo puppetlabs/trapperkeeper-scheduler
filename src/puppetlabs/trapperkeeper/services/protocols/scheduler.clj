@@ -38,4 +38,12 @@
     [this group-id]
     "Return the number of jobs known to the scheduler service, or the number
     of jobs known to the scheduler service by group id. A nil group-id
-    will return the count of all jobs."))
+    will return the count of all jobs.")
+
+  (get-jobs
+   [this]
+   [this group-id]
+   "Return all the known job identifiers, or the job identifiers associated
+   with the given group."))
+
+

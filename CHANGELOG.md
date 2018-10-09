@@ -1,3 +1,9 @@
+## 1.0.0
+ * switch from at/at to the Quartz schedule library
+ * update clj-parent and drop support for java 7
+ * reimplement the group-id mapping using quartz internals
+ * add interface for listing the exiting job identifiers
+
 ## 0.1.0
  * Add the concept of group-id to the job creation endpoints to allow
  jobs to be grouped together for listing and cancellation.

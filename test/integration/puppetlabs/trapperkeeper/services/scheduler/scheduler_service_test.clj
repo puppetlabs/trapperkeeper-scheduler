@@ -1,17 +1,18 @@
 (ns puppetlabs.trapperkeeper.services.scheduler.scheduler-service-test
   (:require [clojure.test :refer :all]
+            [puppetlabs.kitchensink.core :as ks]
             [puppetlabs.trapperkeeper.testutils.bootstrap :refer :all]
             [puppetlabs.trapperkeeper.services.scheduler.scheduler-service :refer :all]
             [puppetlabs.trapperkeeper.services.protocols.scheduler :refer :all]
-            [puppetlabs.trapperkeeper.app :as tk]
-            [overtone.at-at :as at-at]))
+            [puppetlabs.trapperkeeper.services.scheduler.scheduler-core :as sc]
+            [puppetlabs.trapperkeeper.app :as tk]))
 
 (deftest ^:integration test-interspaced
   (testing "without group-id"
     (with-app-with-empty-config app [scheduler-service]
       (testing "interspaced"
         (let [service (tk/get-service app :SchedulerService)
-              num-runs 3 ; let it run a few times, but not too many
+              num-runs 10 ; let it run a few times, but not too many
               interval 300
               p (promise)
               counter (atom 0)
@@ -40,7 +41,10 @@
             (stop-job service job-id))
 
           (testing (str "Each delay should be at least " interval "ms")
-            (is (every? (fn [delay] (>= delay interval)) @delays)))))))
+            (is (every? (fn [delay] (>= delay interval)) @delays)))
+
+          (testing "can schedule far in the future"
+            (interspaced service 21026149688 (constantly nil)))))))
 
   (testing "with group-id"
     (with-app-with-empty-config app [scheduler-service]
@@ -82,16 +86,18 @@
   (testing "without group-id"
     (with-app-with-empty-config app [scheduler-service]
       (testing "after"
-        (let [delay 100]
+        (let [delay 100
+              service (tk/get-service app :SchedulerService)]
           (testing "should execute at least " delay " milliseconds in the future"
             (let [completed (promise)
-                  job #(deliver completed (System/currentTimeMillis))
-                  service (tk/get-service app :SchedulerService)]
+                  job #(deliver completed (System/currentTimeMillis))]
               (let [schedule-time (System/currentTimeMillis)]
                 (after service delay job)
                 (let [execution-time (deref completed)
                       actual-delay (- execution-time schedule-time)]
-                  (is (>= actual-delay delay))))))))))
+                  (is (>= actual-delay delay))))))
+          (testing "can schedule far in the future"
+            (after service 21026149688 (constantly nil)))))))
 
   (testing "with group-id"
     (with-app-with-empty-config app [scheduler-service]
@@ -107,12 +113,6 @@
                       actual-delay (- execution-time schedule-time)]
                   (is (>= actual-delay delay)))))))))))
 
-; This test has a race condition, but it is very unlikley to occur in reality,
-; and so far it's actually been impossible to get this test to fail due to a
-; lost race.  'stop-job' is probably impossible to test deterministically.
-; It was decided that having a test with a race condition was better than no test
-; at all in this case, primarily due to the fact that the underlying scheduler
-; library (at-at) has no tests of its own.  :(
 (deftest ^:integration test-stop-job
   (testing "without group-id"
     (testing "stop-job lets a job complete but does not run it again"
@@ -141,7 +141,8 @@
               (Thread/sleep 100)
               (is (= original-start-time @start-time)))
             (testing "there should be no other jobs running"
-              (is (= 0 (count @(get-jobs service))))))))))
+              (is (= 0 (count-jobs service)))))))))
+
   (testing "with group-id"
     (testing "stop-job lets a job complete but does not run it again"
       (with-app-with-empty-config app [scheduler-service]
@@ -169,11 +170,16 @@
               (Thread/sleep 100)
               (is (= original-start-time @start-time)))
             (testing "there should be no other jobs running"
-              (is (= 0 (count @(get-jobs service)))))))))))
+              (is (= 0 (count-jobs service))))))))))
 
 (defn guaranteed-start-interval-job
   ([service interval]
-    (guaranteed-start-interval-job service interval nil))
+   (let [started (promise)
+         job (fn []
+               (deliver started nil))
+         result (interspaced service interval job)]
+     (deref started)
+     result))
 
   ([service interval group-id]
    (let [started (promise)
@@ -192,15 +198,15 @@
             job-0 (guaranteed-start-interval-job service interval)]
         (is (= 1 (count-jobs service)))
         (let [job-1 (guaranteed-start-interval-job service interval)]
-          (is (= 2 (count-jobs service))
+          (is (= 2 (count-jobs service)))
           (let [job-2 (guaranteed-start-interval-job service interval)]
-            (is (= 3 (count-jobs service)))
-            (stop-job service job-0)
-            (is (= 2 (count-jobs service)))
-            (stop-job service job-1)
-            (is (= 1 (count-jobs service)))
-            (stop-job service job-2)
-            (is (= 0 (count-jobs service)))))))))
+              (is (= 3 (count-jobs service)))
+              (stop-job service job-0)
+              (is (= 2 (count-jobs service)))
+              (stop-job service job-1)
+              (is (= 1 (count-jobs service)))
+              (stop-job service job-2)
+              (is (= 0 (count-jobs service))))))))
 
   (testing "count-jobs shows correct number of group-id and non-group-id jobs"
     (with-app-with-empty-config app [scheduler-service]
@@ -215,27 +221,27 @@
           (let [job-1 (guaranteed-start-interval-job service interval)]
             (is (= 3 (count-jobs service)))
             (is (= 1 (count-jobs service group-id)))
-              (let [group-id-job-1 (guaranteed-start-interval-job service interval group-id)]
+            (let [group-id-job-1 (guaranteed-start-interval-job service interval group-id)]
+              (is (= 4 (count-jobs service)))
+              (is (= 2 (count-jobs service group-id)))
+              (let [job-2 (guaranteed-start-interval-job service interval)]
+                (is (= 5 (count-jobs service)))
+                (is (= 2 (count-jobs service group-id)))
+                (stop-job service job-0)
                 (is (= 4 (count-jobs service)))
                 (is (= 2 (count-jobs service group-id)))
-                (let [job-2 (guaranteed-start-interval-job service interval)]
-                  (is (= 5 (count-jobs service)))
-                  (is (= 2 (count-jobs service group-id)))
-                  (stop-job service job-0)
-                  (is (= 4 (count-jobs service)))
-                  (is (= 2 (count-jobs service group-id)))
-                  (stop-job service group-id-job-0)
-                  (is (= 3 (count-jobs service)))
-                  (is (= 1 (count-jobs service group-id)))
-                  (stop-job service job-1)
-                  (is (= 2 (count-jobs service)))
-                  (is (= 1 (count-jobs service group-id)))
-                  (stop-job service group-id-job-1)
-                  (is (= 1 (count-jobs service)))
-                  (is (= 0 (count-jobs service group-id)))
-                  (stop-job service job-2)
-                  (is (= 0 (count-jobs service)))
-                  (is (= 0 (count-jobs service group-id))))))))))
+                (stop-job service group-id-job-0)
+                (is (= 3 (count-jobs service)))
+                (is (= 1 (count-jobs service group-id)))
+                (stop-job service job-1)
+                (is (= 2 (count-jobs service)))
+                (is (= 1 (count-jobs service group-id)))
+                (stop-job service group-id-job-1)
+                (is (= 1 (count-jobs service)))
+                (is (= 0 (count-jobs service group-id)))
+                (stop-job service job-2)
+                (is (= 0 (count-jobs service)))
+                (is (= 0 (count-jobs service group-id))))))))))
 
   (testing "after reduces count when complete"
     (with-app-with-empty-config app [scheduler-service]
@@ -292,24 +298,17 @@
           (is (= 1 (count-jobs service group-id-1))))
 
         (testing "stopping by group id stops the job"
-          (stop-jobs service group-id-1))
+          (stop-jobs service group-id-1)
           (is (= 0 (count-jobs service)))
           (is (= 0 (count-jobs service group-id-0)))
-          (is (= 0 (count-jobs service group-id-1)))))))
+          (is (= 0 (count-jobs service group-id-1))))))))
 
 (defn schedule-random-jobs
-  "Schedules several random jobs and returns their at/at IDs."
+  "Schedules several random jobs and returns their JobKeys."
   [service]
   (set
-    (for [x [1 2 3]]
-      (:job (interspaced service 1000 (constantly x))))))
-
-; In the future, it might be reasonable to add a function like this into the
-; scheduler service protocol.  If so, this function can be deleted.
-(defn at-at-scheduled-jobs
-  "Returns all of at-at's scheduled jobs."
-  [service]
-  (set (map :id (at-at/scheduled-jobs (get-pool service)))))
+   (for [x [1 2 3]]
+     (interspaced service 1000 (constantly x)))))
 
 (deftest ^:integration test-shutdown
   (testing "Any remaining jobs will be stopped when the service is stopped."
@@ -317,9 +316,34 @@
           service (tk/get-service app :SchedulerService)
           job-ids (schedule-random-jobs service)]
 
-      (testing "at-at reports all of the jobs we just scheduled"
-        (is (= job-ids (at-at-scheduled-jobs service))))
+      (testing "reports all of the jobs we just scheduled"
+        (is (= (set job-ids) (set (get-jobs service)))))
 
       (testing "Stopping the service stops all of the scheduled jobs"
         (tk/stop app)
-        (is (= #{} (at-at-scheduled-jobs service)))))))
+        (is (empty? (get-jobs service))))))
+
+  (testing "Shutdown honors timeout and interrupts existing jobs"
+    ; redefine the default timeout so we don't have to wait forever
+    (with-redefs [sc/shutdown-timeout-sec 5]
+      (let [app (bootstrap-services-with-empty-config [scheduler-service])
+            service (tk/get-service app :SchedulerService)
+            is-test-done (promise)
+            job-done (promise)
+            ; run a job that waits on a promise that isn't ever delivered, but is interrupted
+            job (interspaced service 1000 (fn []
+                                            (try
+                                              (deref is-test-done)
+                                              (catch InterruptedException _
+                                                (deliver job-done true)))))]
+
+        (testing "job was correctly scheduled"
+          (is (= (set [job]) (set (get-jobs service)))))
+
+        (testing "Stopping the service does not block forever"
+          (is (not= :timeout (ks/with-timeout 10 :timeout (tk/stop app))))
+          (is (empty? (get-jobs service))))
+        (deref job-done)))))
+
+
+
