@@ -5,7 +5,7 @@
                  [puppetlabs/trapperkeeper]
                  [puppetlabs/i18n]
                  [puppetlabs/kitchensink]
-                 [org.quartz-scheduler/quartz "2.2.3"]]
+                 [org.quartz-scheduler/quartz "2.2.3" :exclusions [c3p0]]]
 
   :min-lein-version "2.7.1"
 
