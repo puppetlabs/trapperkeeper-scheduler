@@ -1,3 +1,6 @@
+## 1.0.1
+ * exclude c3p0 from dependencies, it isn't used.
+
 ## 1.0.0
  * switch from at/at to the Quartz schedule library
  * update clj-parent and drop support for java 7
