@@ -13,9 +13,10 @@
 
 (defn create-scheduler
   "Creates and returns a thread pool which can be used for scheduling jobs."
-  []
+  [thread-count]
   ;; without the following property set, quartz does a version check automatically
   (System/setProperty "org.quartz.scheduler.skipUpdateCheck" "true")
+  (System/setProperty "org.quartz.threadPool.threadCount" (str thread-count))
   (let [scheduler (StdSchedulerFactory/getDefaultScheduler)]
     (.start scheduler)
     scheduler))
@@ -35,8 +36,8 @@
   [n f ^Scheduler scheduler group-name]
   (try
     (let [job-name (Key/createUniqueName group-name)
-           job (-> (build-executable-job f job-name group-name {:interval n}))
-           schedule (-> (SimpleScheduleBuilder/simpleSchedule))
+           job (build-executable-job f job-name group-name {:interspaced n})
+           schedule (SimpleScheduleBuilder/simpleSchedule)
            trigger (-> (TriggerBuilder/newTrigger)
                        (.withSchedule schedule)
                        (.startNow)
@@ -54,6 +55,46 @@
           job (build-executable-job f job-name group-name)
           future-date (Date. ^Long (+ (System/currentTimeMillis) n))
           trigger (-> (TriggerBuilder/newTrigger)
+                      (.startAt future-date)
+                      (.build))]
+      (.scheduleJob scheduler job trigger)
+      (.getJobKey trigger))
+    (catch SchedulerException e
+      ; this can occur if the interface is being used while the scheduler is shutdown
+      (log/error e (i18n/trs "Failed to schedule job")))))
+
+(defn interval
+  [^Scheduler scheduler repeat-delay f group-name]
+  (try
+    (let [job-name (Key/createUniqueName group-name)
+          job (build-executable-job f job-name group-name {:interval repeat-delay})
+          schedule (-> (SimpleScheduleBuilder/simpleSchedule)
+                       (.withIntervalInMilliseconds repeat-delay)
+                       (.withMisfireHandlingInstructionNextWithRemainingCount)
+                       (.repeatForever))
+
+          trigger (-> (TriggerBuilder/newTrigger)
+                      (.withSchedule schedule)
+                      (.startNow)
+                      (.build))]
+      (.scheduleJob scheduler job trigger)
+      (.getJobKey trigger))
+    (catch SchedulerException e
+      ; this can occur if the interface is being used while the scheduler is shutdown
+      (log/error e (i18n/trs "Failed to schedule job")))))
+
+(defn interval-after
+  [^Scheduler scheduler initial-delay repeat-delay f group-name]
+  (try
+    (let [job-name (Key/createUniqueName group-name)
+          job (build-executable-job f job-name group-name {:interval repeat-delay})
+          schedule (-> (SimpleScheduleBuilder/simpleSchedule)
+                       (.withIntervalInMilliseconds repeat-delay)
+                       (.withMisfireHandlingInstructionNextWithRemainingCount)
+                       (.repeatForever))
+          future-date (Date. ^Long (+ (System/currentTimeMillis) initial-delay))
+          trigger (-> (TriggerBuilder/newTrigger)
+                      (.withSchedule schedule)
                       (.startAt future-date)
                       (.build))]
       (.scheduleJob scheduler job trigger)

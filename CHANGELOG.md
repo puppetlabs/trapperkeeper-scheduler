@@ -1,3 +1,8 @@
+## 1.1.0
+ * add interface for `interval` and `interval-after` to the
+ protocol and implementation to allow regular cadance jobs.
+ * add support for thread-count configuration value that defaults to 10
+
 ## 1.0.1
  * exclude c3p0 from dependencies, it isn't used.
 

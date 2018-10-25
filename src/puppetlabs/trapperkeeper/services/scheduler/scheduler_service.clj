@@ -35,11 +35,12 @@
 ; Trapperkeeper service definition
 (tk/defservice scheduler-service
   SchedulerService
-  []
+  [[:ConfigService get-in-config]]
 
   (init [this context]
     (log/info (i18n/trs "Initializing Scheduler Service"))
-    (let [scheduler (core/create-scheduler)]
+     ;; the default in Quartz is 10 threads, so make that the default if it isn't specified
+    (let [scheduler (core/create-scheduler (get-in-config [:scheduler :thread-count] 10))]
       (assoc context :scheduler scheduler)))
 
   (stop [this context]
@@ -59,6 +60,19 @@
 
   (after [this n f group-id]
      (core/after n f (get-scheduler this) (safe-group-id group-id)))
+
+  (interval [this n f]
+    (interval this n f default-group-name))
+
+  (interval [this n f group-id]
+    (core/interval (get-scheduler this) n f (safe-group-id group-id)))
+
+
+  (interval-after [this initial-delay repeat-delay f]
+    (interval-after this initial-delay repeat-delay f default-group-name))
+
+  (interval-after [this initial-delay repeat-delay f group-id]
+    (core/interval-after (get-scheduler this) initial-delay repeat-delay f (safe-group-id group-id)))
 
   (stop-job [this job]
     (core/stop-job job (get-scheduler this)))
