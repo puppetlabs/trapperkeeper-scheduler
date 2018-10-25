@@ -1,4 +1,4 @@
-(defproject puppetlabs/trapperkeeper-scheduler "1.0.3-SNAPSHOT"
+(defproject puppetlabs/trapperkeeper-scheduler "1.0.2"
   :description "Trapperkeeper Scheduler Service"
 
   :dependencies [[org.clojure/clojure]
