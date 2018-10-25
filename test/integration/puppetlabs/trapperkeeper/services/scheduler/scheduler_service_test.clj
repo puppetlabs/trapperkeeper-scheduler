@@ -353,7 +353,7 @@
 
 ;; define some acceptable bounded accuracy ratings.
 ;; as the jvm warms up, the accuracy increases
-(def accuracy-high 15)
+(def accuracy-high 50)
 (def accuracy-low -15)
 
 (deftest ^:integration test-interval
@@ -632,6 +632,3 @@
             (is (<= (+ effective-first-time accuracy-low) (first (distances @start-times)) (+ effective-first-time accuracy-high)))
             ; the next run should be about the interval frequency
             (is (<= (+ interval-frequency accuracy-low) (nth (distances @start-times) 1) (+ interval-frequency accuracy-high)))))))))
-
-
-
