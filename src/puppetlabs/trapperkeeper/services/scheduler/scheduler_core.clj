@@ -70,6 +70,8 @@
           job (build-executable-job f job-name group-name {:interval repeat-delay})
           schedule (-> (SimpleScheduleBuilder/simpleSchedule)
                        (.withIntervalInMilliseconds repeat-delay)
+                       ; allow quartz to reschedule things outside "org.quartz.jobStore.misfireThreshold" using internal logic
+                       ; this isn't sufficient for short interval jobs, so additional scheduling logic is included in the job itself
                        (.withMisfireHandlingInstructionNextWithRemainingCount)
                        (.repeatForever))
 
@@ -90,6 +92,8 @@
           job (build-executable-job f job-name group-name {:interval repeat-delay})
           schedule (-> (SimpleScheduleBuilder/simpleSchedule)
                        (.withIntervalInMilliseconds repeat-delay)
+                       ; allow quartz to reschedule things outside "org.quartz.jobStore.misfireThreshold" using internal logic
+                       ; this isn't sufficient for short interval jobs, so additional scheduling logic is included in the job itself
                        (.withMisfireHandlingInstructionNextWithRemainingCount)
                        (.repeatForever))
           future-date (Date. ^Long (+ (System/currentTimeMillis) initial-delay))
