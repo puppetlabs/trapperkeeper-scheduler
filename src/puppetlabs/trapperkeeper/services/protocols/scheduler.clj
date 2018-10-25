@@ -19,6 +19,26 @@
     group can be provided to associated jobs with each other to allow
     them to be stopped together.")
 
+  (interval
+    [this n f]
+    [this n f group-id]
+   "Calls 'f' repeatedly with a delay of 'n' milliseconds between the
+    beginning of a given invocation and the beginning of the following
+    invocation. If an invocation executon time is longer than the interval,
+    the subsquent invocation is skipped.
+    Returns an identifier for the scheduled job. An optional
+    group-id can be provided to collect a set of jobs into one group to allow
+    them to be stopped together.")
+
+  (interval-after
+    [this initial-delay repeat-delay f]
+    [this initial-delay repeat-delay f group-id]
+    "Calls 'f' repeatedly with a delay of 'repeat-delay' milliseconds after the `initial-delay` in millseconds.
+    Returns an identifier for the scheduled job. An optional
+    group-id can be provided to collect a set of jobs into one group to allow
+    them to be stopped together.")
+
+
   (stop-job [this job]
     "Given an identifier of a scheduled job, stop its execution.  If an
     invocation of the job is currently executing, it will be allowed to

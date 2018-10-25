@@ -29,6 +29,22 @@ The functions that are currently available are as follows:
   Returns an identifier that can be used to reference this scheduled job (e.g.,
   for cancellation) later. A group identifier `group-id` can be provided that
   allows jobs in the same group to be stopped at the same time.
+* `interval [interval-ms f]`: schedules a job that will call `f`, block until
+  that call completes, and then run again at the next logical interval based on
+  `interval-ms` and the original start time.  In other words, `f` will get called every
+  `interval-ms` unless the execution time for `f` exceeds `interval-ms` in which case
+  that execution is skipped.
+  Returns an identifier that can be used to reference this scheduled job (e.g.,
+  for cancellation) later.
+* `interval [interval-ms f group-id]`: schedules a job that will call `f`, block until
+  that call completes, and then run again at the next logical interval based on
+  `interval-ms` and the original start time.  In other words, `f` will get called every
+  `interval-ms` unless the execution time for `f` exceeds `interval-ms` in which case
+  that execution is skipped. If there are insufficient threads in the thread pool to
+  run the interval job at the time of execution, the job will be skipped. Returns an
+  identifier that can be used to reference this scheduled job (e.g.,
+  for cancellation) later. A group identifier `group-id` can be provided that
+  allows jobs in the same group to be stopped at the same time.
 * `after [interval-ms f]`: schedules a job that will call `f` a single time, after
   a delay of `interval-ms` milliseconds.  Returns an identifier that can be used
   to reference this scheduled job (e.g. for cancellation) later.
@@ -37,6 +53,11 @@ The functions that are currently available are as follows:
   to reference this scheduled job (e.g. for cancellation) later. A group identifier
   `group-id` can be provided that allows jobs in the same group to be stopped
   at the same time.
+* `interval-after [initial-delay-ms interval-ms f]`: Similar to `interval` but delays
+  initial execution until `initial-delay-ms` has occurred.
+* `interval-after [initial-delay-ms interval-ms f group-id]`:Similar to `interval` but delays
+  initial execution until `initial-delay-ms` has occurred A group identifier `group-id` can be provided that
+  allows jobs in the same group to be stopped at the same time.
 * `stop-job [job-id]`: Given a `job-id` returned by one of the previous functions,
   cancels the job.  If the job is currently executing it will be allowed to complete,
   but will not be invoked again afterward.  Returns `true` if the job was successfully
@@ -59,12 +80,16 @@ The functions that are currently available are as follows:
 
 ### Implementation Details
 
+A configuration value is available under scheduler->thread-count that controls
+the number of threads used internally by the quartz library for job scheduling.
+If not specified, it defaults to 10, which is the quartz internal default.
+
 The current implementation of the `SchedulerService` is a wrapper around
 the [`org.quartz-scheduler/quartz`](http://www.quartz-scheduler.org/) library.
 
 ### What's Next?
 
-* Add additional scheduling API functions, e.g. `every`.
+* Add additional scheduling API functions with more complicated recurring models.`.
 * Add API for introspecting the state of currently scheduled jobs
 
 #Support
