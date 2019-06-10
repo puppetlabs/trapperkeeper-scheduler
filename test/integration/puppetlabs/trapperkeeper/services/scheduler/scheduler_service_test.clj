@@ -353,8 +353,8 @@
 
 ;; define some acceptable bounded accuracy ratings.
 ;; as the jvm warms up, the accuracy increases
-(def accuracy-high 50)
-(def accuracy-low -15)
+(def accuracy-high 150)
+(def accuracy-low -50)
 
 (deftest ^:integration test-interval
   (let [num-runs 10] ; let it run a few times, but not too many
