@@ -7,17 +7,22 @@
            (org.quartz JobBuilder SimpleScheduleBuilder TriggerBuilder DateBuilder
                        DateBuilder$IntervalUnit Scheduler JobKey SchedulerException JobDataMap)
            (org.quartz.utils Key)
-           (java.util Date)))
+           (java.util Date UUID)))
 
 (def shutdown-timeout-sec 30)
 
 (defn create-scheduler
-  "Creates and returns a thread pool which can be used for scheduling jobs."
+  "Creates and returns a scheduler with configured thread pool which
+  can be used for scheduling jobs."
   [thread-count]
-  ;; without the following property set, quartz does a version check automatically
-  (System/setProperty "org.quartz.scheduler.skipUpdateCheck" "true")
-  (System/setProperty "org.quartz.threadPool.threadCount" (str thread-count))
-  (let [scheduler (StdSchedulerFactory/getDefaultScheduler)]
+  (let [config [["org.quartz.scheduler.skipUpdateCheck" "true"]
+                ["org.quartz.scheduler.instanceName" (.toString (UUID/randomUUID))]
+                ["org.quartz.threadPool.threadCount" (str thread-count)]]
+        props (.clone (System/getProperties))
+        _ (doseq [[k v] config]
+            (.setProperty props k v))
+        factory (StdSchedulerFactory. props)
+        scheduler (.getScheduler factory)]
     (.start scheduler)
     scheduler))
 
