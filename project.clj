@@ -7,9 +7,9 @@
                  [puppetlabs/kitchensink]
                  [org.quartz-scheduler/quartz "2.2.3" :exclusions [c3p0]]]
 
-  :min-lein-version "2.7.1"
+  :min-lein-version "2.9.1"
 
-  :parent-project {:coords [puppetlabs/clj-parent "1.7.13"]
+  :parent-project {:coords [puppetlabs/clj-parent "4.0.4"]
                    :inherit [:managed-dependencies]}
 
   :pedantic? :abort
@@ -28,7 +28,7 @@
                    :dependencies [[puppetlabs/trapperkeeper :classifier "test" :scope "test"]
                                   [puppetlabs/kitchensink :classifier "test" :scope "test"]]}}
 
-  :plugins  [[lein-parent "0.3.1"]
+  :plugins  [[lein-parent "0.3.7"]
              [puppetlabs/i18n "0.8.0"]]
   :aot [puppetlabs.trapperkeeper.services.scheduler.job]
   :repl-options {:init-ns user})

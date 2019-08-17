@@ -1,8 +1,8 @@
 (ns puppetlabs.trapperkeeper.services.scheduler.job
   (:gen-class
    :name puppetlabs.trapperkeeper.services.scheduler.job
-   :state "state"
-   :init "init"
+   :state state
+   :init init
    :constructors {[] []}
    :implements [org.quartz.StatefulJob org.quartz.InterruptableJob]
    :prefix "-")
