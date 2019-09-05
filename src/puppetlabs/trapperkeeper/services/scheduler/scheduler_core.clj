@@ -7,7 +7,7 @@
            (org.quartz JobBuilder SimpleScheduleBuilder TriggerBuilder DateBuilder
                        DateBuilder$IntervalUnit Scheduler JobKey SchedulerException JobDataMap)
            (org.quartz.utils Key)
-           (java.util Date UUID)))
+           (java.util Date UUID Properties)))
 
 (def shutdown-timeout-sec 30)
 
@@ -21,7 +21,7 @@
         props (.clone (System/getProperties))
         _ (doseq [[k v] config]
             (.setProperty props k v))
-        factory (StdSchedulerFactory. props)
+        factory (StdSchedulerFactory. ^Properties props)
         scheduler (.getScheduler factory)]
     (.start scheduler)
     scheduler))
