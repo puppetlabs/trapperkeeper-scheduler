@@ -4,8 +4,8 @@
             [puppetlabs.kitchensink.core :as ks])
   (:import (org.quartz.impl.matchers GroupMatcher)
            (org.quartz.impl StdSchedulerFactory SchedulerRepository)
-           (org.quartz JobBuilder SimpleScheduleBuilder TriggerBuilder DateBuilder
-                       DateBuilder$IntervalUnit Scheduler JobKey SchedulerException JobDataMap)
+           (org.quartz JobBuilder SimpleScheduleBuilder TriggerBuilder
+                       Scheduler JobKey SchedulerException JobDataMap)
            (org.quartz.utils Key)
            (java.util Date UUID Properties)))
 
@@ -29,6 +29,8 @@
 (defn build-executable-job
   ([f job-name group-name] (build-executable-job f job-name group-name {}))
   ([f job-name group-name options]
+   (when (nil? f)
+     (throw (IllegalArgumentException. ^String (i18n/trs "Scheduled function must be non-nil"))))
    (let [jdm (JobDataMap.)
          options (assoc options :job f)]
      (.put jdm "jobData" options)

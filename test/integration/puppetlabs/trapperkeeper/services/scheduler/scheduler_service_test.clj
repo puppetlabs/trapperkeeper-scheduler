@@ -632,3 +632,23 @@
             (is (<= (+ effective-first-time accuracy-low) (first (distances @start-times)) (+ effective-first-time accuracy-high)))
             ; the next run should be about the interval frequency
             (is (<= (+ interval-frequency accuracy-low) (nth (distances @start-times) 1) (+ interval-frequency accuracy-high)))))))))
+
+(deftest ^:integration null-handling
+  (with-app-with-empty-config app [scheduler-service]
+      (let [service (tk/get-service app :SchedulerService)]
+        (testing "interspaced throws exception on nil function"
+          (is (thrown? IllegalArgumentException
+                (interspaced service 300 nil))))
+        (testing "after throws exception on nil function"
+          (is (thrown? IllegalArgumentException
+                (after service 300 nil))))
+        (testing "interval throws exception on nil function"
+          (is (thrown? IllegalArgumentException
+                (interval service 300 nil))))
+        (testing "interval-after throws exception on nil function"
+          (is (thrown? IllegalArgumentException
+                (interval-after service 1 300 nil)))))))
+
+
+
+
