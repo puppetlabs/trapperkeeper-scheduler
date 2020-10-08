@@ -1,3 +1,12 @@
+## 1.1.3
+ * ensure a non-nil function is passed to scheduling routines
+ 
+## 1.1.2
+ * add testing for java 11, disambiguate StdScheduleFactory constructor
+
+## 1.1.1
+ * use a unique scheduler rather than the default scheduler
+
 ## 1.1.0
  * add interface for `interval` and `interval-after` to the
  protocol and implementation to allow regular cadance jobs.
