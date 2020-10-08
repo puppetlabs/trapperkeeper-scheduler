@@ -5,11 +5,11 @@
                  [puppetlabs/trapperkeeper]
                  [puppetlabs/i18n]
                  [puppetlabs/kitchensink]
-                 [org.quartz-scheduler/quartz "2.3.1" :exclusions [c3p0]]]
+                 [org.quartz-scheduler/quartz "2.3.2" :exclusions [c3p0]]]
 
   :min-lein-version "2.9.1"
 
-  :parent-project {:coords [puppetlabs/clj-parent "4.0.4"]
+  :parent-project {:coords [puppetlabs/clj-parent "4.6.7"]
                    :inherit [:managed-dependencies]}
 
   :pedantic? :abort
