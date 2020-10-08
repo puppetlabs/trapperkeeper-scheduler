@@ -1,13 +1,13 @@
 # SOME DESCRIPTIVE TITLE.
 # Copyright (C) YEAR Puppet <docs@puppet.com>
-# This file is distributed under the same license as the PACKAGE package.
+# This file is distributed under the same license as the puppetlabs.trapperkeeper_scheduler package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
 #
 #, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: puppetlabs.trapperkeeper_scheduler \n"
-"X-Git-Ref: 1dffedcd4bb74d536f251ce330f4a9f6c10a0b2b\n"
+"X-Git-Ref: ccf78ef0d6b688ce8fc24988277ddf04de9f8945\n"
 "Report-Msgid-Bugs-To: docs@puppet.com\n"
 "POT-Creation-Date: \n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
@@ -24,6 +24,10 @@ msgstr ""
 
 #: src/puppetlabs/trapperkeeper/services/scheduler/job.clj
 msgid "scheduled job threw error"
+msgstr ""
+
+#: src/puppetlabs/trapperkeeper/services/scheduler/scheduler_core.clj
+msgid "Scheduled function must be non-nil"
 msgstr ""
 
 #. this can occur if the interface is being used while the scheduler is shutdown
