@@ -62,7 +62,7 @@ The functions that are currently available are as follows:
   cancels the job.  If the job is currently executing it will be allowed to complete,
   but will not be invoked again afterward.  Returns `true` if the job was successfully
   stopped, `false` otherwise.
-* `stop-grouped-jobs [group-id]`: Given a `group-id` identifier, cancel all the jobs
+* `stop-jobs [group-id]`: Given a `group-id` identifier, cancel all the jobs
   associated with that `group-id`.  If any of the jobs are currently executing they
   will be allowed to complete, but will not be invoked again afterward.  Returns a
   sequence of maps, one for each job in the group, with each map containing the
