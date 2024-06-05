@@ -1,3 +1,6 @@
+## 1.2.0
+ * updates clj-parent and drops support for java 8
+
 ## 1.1.3
  * ensure a non-nil function is passed to scheduling routines
  
