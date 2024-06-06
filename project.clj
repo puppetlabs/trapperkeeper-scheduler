@@ -1,4 +1,4 @@
-(defproject puppetlabs/trapperkeeper-scheduler "1.1.4-SNAPSHOT"
+(defproject puppetlabs/trapperkeeper-scheduler "1.2.0-SNAPSHOT"
   :description "Trapperkeeper Scheduler Service"
 
   :dependencies [[org.clojure/clojure]
@@ -9,7 +9,7 @@
 
   :min-lein-version "2.9.1"
 
-  :parent-project {:coords [puppetlabs/clj-parent "4.9.4"]
+  :parent-project {:coords [puppetlabs/clj-parent "7.3.30"]
                    :inherit [:managed-dependencies]}
 
   :pedantic? :abort
