@@ -14,6 +14,9 @@
 
   :pedantic? :abort
 
+  :license {:name "Apache License, Version 2.0" 
+            :url "http://www.apache.org/licenses/LICENSE-2.0.html"}
+
   :test-paths ["test/unit" "test/integration"]
 
   :test-selectors {:integration :integration
