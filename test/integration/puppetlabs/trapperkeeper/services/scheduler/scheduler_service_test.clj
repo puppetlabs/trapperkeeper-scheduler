@@ -6,7 +6,8 @@
             [puppetlabs.trapperkeeper.services.protocols.scheduler :refer :all]
             [puppetlabs.trapperkeeper.services.scheduler.scheduler-core :as sc]
             [puppetlabs.trapperkeeper.app :as tk])
-  (:import [java.util.concurrent TimeUnit CountDownLatch]))
+  (:import [java.util.concurrent TimeUnit CountDownLatch]
+           [java.time LocalDateTime]))
 
 (deftest ^:integration test-interspaced
   (testing "without group-id"
@@ -113,6 +114,70 @@
                 (let [execution-time (deref completed)
                       actual-delay (- execution-time schedule-time)]
                   (is (>= actual-delay delay)))))))))))
+
+(deftest ^:integration test-cron
+  (testing "without group-id"
+    (with-app-with-empty-config app [scheduler-service]
+      (testing "cron"
+        (let [service (tk/get-service app :SchedulerService)
+              num-runs 5 ; let it run a few times, but not too many 
+              cron-string "0/10 * * * * ?" ; every 10 seconds
+              p (promise)
+              counter (atom 0)
+              runtimes (atom [])
+              last-completion-time (atom nil)
+              job (fn []
+                    (when @last-completion-time
+                      (let [runtime (LocalDateTime/now)]
+                        (swap! runtimes conj runtime)))
+                    (swap! counter inc)
+                    (when (= @counter num-runs)
+                      (deliver p nil))
+
+                    (reset! last-completion-time (LocalDateTime/now)))]
+
+          ; Schedule the job, and wait for it run num-runs times, then stop it.
+          (let [job-id (cron service cron-string job)]
+            (deref p)
+            (stop-job service job-id))
+
+          (testing "each runtime should be on a multiple of 10 seconds"
+            (is (every? (fn [^LocalDateTime runtime] (= (rem (.getSecond runtime) 10)
+                                                        0)) @runtimes)))
+          (testing "throws Illegal Argument exception for invalid cron string"
+            (is (thrown? IllegalArgumentException
+                         (cron service "**invalid**" job))))))))
+  (testing "with group-id"
+    (with-app-with-empty-config app [scheduler-service]
+      (testing "cron"
+        (let [service (tk/get-service app :SchedulerService)
+              num-runs 5 ; let it run a few times, but not too many 
+              cron-string "0/10 * * * * ?" ; every 10 seconds
+              p (promise)
+              counter (atom 0)
+              runtimes (atom [])
+              last-completion-time (atom nil)
+              job (fn []
+                    (when @last-completion-time
+                      (let [runtime (LocalDateTime/now)]
+                        (swap! runtimes conj runtime)))
+                    (swap! counter inc)
+                    (when (= @counter num-runs)
+                      (deliver p nil))
+
+                    (reset! last-completion-time (LocalDateTime/now)))]
+
+          ; Schedule the job, and wait for it run num-runs times, then stop it.
+          (let [job-id (cron service cron-string job :some-group-identifier)]
+            (deref p)
+            (stop-job service job-id))
+
+          (testing "each runtime should be on a multiple of 10 seconds"
+            (is (every? (fn [^LocalDateTime runtime] (= (rem (.getSecond runtime) 10)
+                                                        0)) @runtimes)))
+          (testing "throws Illegal Argument exception for invalid cron string"
+            (is (thrown? IllegalArgumentException
+                         (cron service "**invalid**" job :some-group-identifier)))))))))
 
 (deftest ^:integration test-stop-job
   (testing "without group-id"

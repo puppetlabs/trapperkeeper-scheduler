@@ -45,6 +45,15 @@ The functions that are currently available are as follows:
   identifier that can be used to reference this scheduled job (e.g.,
   for cancellation) later. A group identifier `group-id` can be provided that
   allows jobs in the same group to be stopped at the same time.
+* `cron [cron-string f]`: schedules a job that will call `f` in accordance with the
+  cron schedule indicated by the 'cron-string'. Returns an identifier that can 
+  be used to reference this scheduled job (e.g. for cancellation) later.  More information
+  on a valid cron string can be found [here](https://www.quartz-scheduler.org/api/2.3.0/org/quartz/CronExpression.html).
+* `cron [cron-string f group-id]`: schedules a job that will call `f` in accordance
+  with the cron schedule indicated by the 'cron-string'. Returns an identifier that can 
+  be used to reference this scheduled job (e.g. for cancellation) later. A group identifier
+  `group-id` can be provided that allows jobs in the same group to be stopped at the same time.
+  More information on a valid cron string can be found [here](https://www.quartz-scheduler.org/api/2.3.0/org/quartz/CronExpression.html).
 * `after [interval-ms f]`: schedules a job that will call `f` a single time, after
   a delay of `interval-ms` milliseconds.  Returns an identifier that can be used
   to reference this scheduled job (e.g. for cancellation) later.

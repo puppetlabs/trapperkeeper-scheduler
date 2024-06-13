@@ -10,6 +10,14 @@
     invocation.  Returns an identifier for the scheduled job. An optional
     group-id can be provided to collect a set of jobs into one group to allow
     them to be stopped together.")
+  
+  (cron
+   [this cron-string f]
+   [this cron-string f group-id]
+    "Calls 'f' in accordance with the cron schedule indicated by the 'cron-string'.
+    Returns an identifier for the scheduled job. An optional
+    group can be provided to associated jobs with each other to allow
+    them to be stopped together.")
 
   (after
     [this n f]
