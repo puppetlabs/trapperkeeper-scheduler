@@ -54,6 +54,12 @@
 
   (interspaced [this n f group-id]
     (core/interspaced n f (get-scheduler this) (safe-group-id group-id)))
+  
+  (cron [this cron-string f]
+        (cron this cron-string f default-group-name))
+  
+  (cron [this cron-string f group-id]
+        (core/cron cron-string f (get-scheduler this) (safe-group-id group-id)))
 
   (after [this n f]
    (after this n f default-group-name))

@@ -5,7 +5,8 @@
   (:import (org.quartz.impl.matchers GroupMatcher)
            (org.quartz.impl StdSchedulerFactory SchedulerRepository)
            (org.quartz JobBuilder SimpleScheduleBuilder TriggerBuilder
-                       Scheduler JobKey SchedulerException JobDataMap)
+                       Scheduler JobKey SchedulerException JobDataMap 
+                       CronExpression CronScheduleBuilder)
            (org.quartz.utils Key)
            (java.util Date UUID Properties)))
 
@@ -54,6 +55,27 @@
     (catch SchedulerException e
       ; this can occur if the interface is being used while the scheduler is shutdown
       (log/error e (i18n/trs "Failed to schedule job")))))
+
+(defn cron
+ [cron-string f ^Scheduler scheduler group-name]
+  (try
+    ;; throws parse error if cron-string is invalid
+    (CronExpression/validateExpression cron-string)
+    (let [cron-schedule (CronScheduleBuilder/cronSchedule cron-string)
+          job-name (Key/createUniqueName group-name)
+          job (build-executable-job f job-name group-name)
+          trigger (-> (TriggerBuilder/newTrigger)
+                      (.withSchedule cron-schedule)
+                      (.build))]
+      (.scheduleJob scheduler job trigger)
+      (.getJobKey trigger))
+    (catch SchedulerException e
+      ; this can occur if the interface is being used while the scheduler is shutdown
+      (log/error e (i18n/trs "Failed to schedule job")))
+    (catch java.text.ParseException  e
+      ;; this occurs when the cron-string is invalid
+      (log/debug e)
+      (throw (IllegalArgumentException. ^String (i18n/trs "Invalid cron expression") e)))))
 
 (defn after
   [n f ^Scheduler scheduler group-name]
