@@ -136,6 +136,20 @@
       ; this can occur if the interface is being used while the scheduler is shutdown
       (log/error e (i18n/trs "Failed to schedule job")))))
 
+(defn cron-next-valid-time
+  "Returns the next occurance of the cron specification after the given date"
+  [cron-string ^Date date] 
+  (try
+    ;; throws parse error if cron-string is invalid
+    (CronExpression/validateExpression cron-string)
+    (let [cron-expression (CronExpression. cron-string)
+          next-valid-time (.getNextValidTimeAfter cron-expression date)]
+      next-valid-time)
+    (catch java.text.ParseException  e
+      ;; this occurs when the cron-string is invalid
+      (log/debug e)
+      (throw (IllegalArgumentException. ^String (i18n/trs "Invalid cron expression") e)))))
+
 (defn stop-job
   "Returns true, if the job was deleted, and false if the job wasn't found."
   [^JobKey id ^Scheduler scheduler]

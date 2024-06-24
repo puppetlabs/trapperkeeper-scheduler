@@ -10,7 +10,7 @@
     invocation.  Returns an identifier for the scheduled job. An optional
     group-id can be provided to collect a set of jobs into one group to allow
     them to be stopped together.")
-  
+
   (cron
    [this cron-string f]
    [this cron-string f group-id]
@@ -45,6 +45,11 @@
     Returns an identifier for the scheduled job. An optional
     group-id can be provided to collect a set of jobs into one group to allow
     them to be stopped together.")
+
+  (cron-next-valid-time
+   [this cron-string date] 
+   "Given a cron specification and a date, returns a date that corresponds
+    to the next execution of the timer based on that cron value")
 
 
   (stop-job [this job]
