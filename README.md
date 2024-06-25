@@ -54,6 +54,8 @@ The functions that are currently available are as follows:
   be used to reference this scheduled job (e.g. for cancellation) later. A group identifier
   `group-id` can be provided that allows jobs in the same group to be stopped at the same time.
   More information on a valid cron string can be found [here](https://www.quartz-scheduler.org/api/2.3.0/org/quartz/CronExpression.html).
+* `cron-next-valid-time [cron-string date]`: Given a cron specification and a date, returns a 
+  date that corresponds to the next execution of the timer based on that cron value.
 * `after [interval-ms f]`: schedules a job that will call `f` a single time, after
   a delay of `interval-ms` milliseconds.  Returns an identifier that can be used
   to reference this scheduled job (e.g. for cancellation) later.

@@ -60,6 +60,9 @@
   
   (cron [this cron-string f group-id]
         (core/cron cron-string f (get-scheduler this) (safe-group-id group-id)))
+  
+  (cron-next-valid-time [this cron-string date]
+        (core/cron-next-valid-time cron-string date))
 
   (after [this n f]
    (after this n f default-group-name))

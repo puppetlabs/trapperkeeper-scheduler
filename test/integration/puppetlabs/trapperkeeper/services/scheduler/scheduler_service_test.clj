@@ -7,6 +7,7 @@
             [puppetlabs.trapperkeeper.services.scheduler.scheduler-core :as sc]
             [puppetlabs.trapperkeeper.app :as tk])
   (:import [java.util.concurrent TimeUnit CountDownLatch]
+           [java.util Date Calendar]
            [java.time LocalDateTime]))
 
 (deftest ^:integration test-interspaced
@@ -178,6 +179,33 @@
           (testing "throws Illegal Argument exception for invalid cron string"
             (is (thrown? IllegalArgumentException
                          (cron service "**invalid**" job :some-group-identifier)))))))))
+
+(defn create-custom-date
+  "helper fn to create custom future date"
+  [year month day hour minute second] 
+  (let [cal (java.util.Calendar/getInstance)]
+    (.clear cal)
+    (.set cal java.util.Calendar/YEAR year)
+    (.set cal java.util.Calendar/MONTH (dec month)) ;; month in Calendar is zero-indexed
+    (.set cal java.util.Calendar/DAY_OF_MONTH day)
+    (.set cal java.util.Calendar/HOUR_OF_DAY hour) ;; 24-hour format
+    (.set cal java.util.Calendar/MINUTE minute)
+    (.set cal java.util.Calendar/SECOND second)
+    (.set cal java.util.Calendar/MILLISECOND 0)
+    (.getTime cal)))
+
+(deftest ^:integration test-cron-next-valid-time
+  (testing "cron-next-valid-time returns the next runtime of a cron specification from a given date"
+    (with-app-with-empty-config app [scheduler-service]
+      (let [cron-string "0/10 * * * * ?" ; every 10 seconds 
+            current-time (create-custom-date 2010 9 17 9 41 0) ;; year-month-day-hours-mins-seconds
+            expected-execution-time (create-custom-date 2010 9 17 9 41 10)
+            service (tk/get-service app :SchedulerService) 
+            next-execution-time  (cron-next-valid-time service cron-string current-time)]
+        (is (= expected-execution-time next-execution-time))
+        (testing "throws Illegal Argument exception for invalid cron string"
+          (is (thrown? IllegalArgumentException
+                       (cron-next-valid-time service "**invalid**" current-time))))))))
 
 (deftest ^:integration test-stop-job
   (testing "without group-id"
