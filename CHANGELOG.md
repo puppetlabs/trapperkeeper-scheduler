@@ -1,3 +1,10 @@
+## 1.2.3
+ * add interface for `cron` to the protocol and implementation to 
+allow for jobs on a cadence specified by a cron string
+ * add interface for `cron-next-valid-time` to the potocol and 
+implementation to query the next occurance of a given cron 
+specification.
+
 ## 1.2.1
  * updates clj-parent and drops support for java 8
 
